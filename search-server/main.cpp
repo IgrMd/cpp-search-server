@@ -4,6 +4,7 @@
 #include <cmath>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
 #include <utility>
@@ -80,13 +81,22 @@ public:
             });
     }
 
+
+    //Метод обрабатывает запрос, состоящий из строки или из строки со статусом
+    vector<Document> FindTopDocuments(const string& raw_query, const DocumentStatus filter_status = DocumentStatus::ACTUAL) const {
+    	return FindTopDocuments(raw_query,
+    			[filter_status](int document_id, DocumentStatus status, int rating) { return status == filter_status;});
+    }
+
     template<typename Predic>
+    //Метод обрабатывает запрос, первый аргумент которого - строка, второй - функция-предикат
     vector<Document> FindTopDocuments(const string& raw_query, Predic predic) const {
         const Query query = ParseQuery(raw_query);
+        const double treshold = 1e-6;
         auto matched_documents = FindAllDocuments(query, predic);
         sort(matched_documents.begin(), matched_documents.end(),
-             [](const Document& lhs, const Document& rhs) {
-                if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+             [treshold](const Document& lhs, const Document& rhs) {
+                if (abs(lhs.relevance - rhs.relevance) < treshold) {
                     return lhs.rating > rhs.rating;
                 } else {
                     return lhs.relevance > rhs.relevance;
@@ -96,11 +106,6 @@ public:
             matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
         }
         return matched_documents;
-    }
-
-    vector<Document> FindTopDocuments(const string& raw_query) const {
-
-        return FindTopDocuments(raw_query, [](int document_id, DocumentStatus status, int rating) { return status == DocumentStatus::ACTUAL;});
     }
 
     int GetDocumentCount() const {
@@ -158,10 +163,7 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
+        const int rating_sum = accumulate(ratings.begin(), ratings.end(),0);
         return rating_sum / static_cast<int>(ratings.size());
     }
 
@@ -219,19 +221,12 @@ private:
             }
             const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
 
-			if constexpr (is_same_v<Predic, DocumentStatus>) {
-				for (const auto [document_id, term_freq] : word_to_document_freqs_.at(word)) {
-					if (documents_.at(document_id).status == predic) {
-						document_to_relevance[document_id] += term_freq * inverse_document_freq;
-					}
-				}
-			} else {
-				for (const auto [document_id, term_freq] : word_to_document_freqs_.at(word)) {
-					if (predic(document_id, documents_.at(document_id).status, documents_.at(document_id).rating)) {
-						document_to_relevance[document_id] += term_freq * inverse_document_freq;
-					}
-				}
-			}
+            for (const auto [document_id, term_freq] : word_to_document_freqs_.at(word)) {
+            	const auto doc = documents_.at(document_id);
+            	if (predic(document_id, doc.status, doc.rating)) {
+            		document_to_relevance[document_id] += term_freq * inverse_document_freq;
+            	}
+            }
         }
 
         for (const string& word : query.minus_words) {
