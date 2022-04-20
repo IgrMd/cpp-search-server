@@ -369,14 +369,14 @@ void TestMatchingWordsAndMinusWords() {
     server.AddDocument(doc0_id, content0, DocumentStatus::ACTUAL, ratings0);
     {
     	const auto [matched_words, doc_status] = server.MatchDocument("let happiness leave for ever"s, doc0_id);
-    	ASSERT_EQUAL(matched_words[0], "for"s);
-    	ASSERT_EQUAL(matched_words[1], "happiness"s);
-    	ASSERT_EQUAL(matched_words[2], "leave"s);
-    	ASSERT_EQUAL(matched_words[3], "let"s);
+    	ASSERT_EQUAL(matched_words[0], "for"s); // @suppress("Invalid arguments")
+    	ASSERT_EQUAL(matched_words[1], "happiness"s); // @suppress("Invalid arguments")
+    	ASSERT_EQUAL(matched_words[2], "leave"s); // @suppress("Invalid arguments")
+    	ASSERT_EQUAL(matched_words[3], "let"s); // @suppress("Invalid arguments")
     }
     {
     	const auto [matched_words, doc_status] = server.MatchDocument("let happiness -leave for ever"s, doc0_id);
-    	ASSERT_HINT(matched_words.empty(), "Any matched minus word - no matched doc"s);
+    	ASSERT_HINT(matched_words.empty(), "Any matched minus word - no matched doc"s); // @suppress("Method cannot be resolved")
     }
 }
 
@@ -412,7 +412,7 @@ void TestMediumRatingCalculation() {
 }
 
 // Тест проверяет фильтрацию результатов поиска с использованием предиката, задаваемого пользователем
-void TestFiltrationWithUserPridicate() {
+void TestFiltrationWithUserPredicate() {
 	SearchServer server;
     const int doc0_id = 776;
     const string content0 = "happiness for everyone for free and let no one leave offended"s;
@@ -438,8 +438,10 @@ void TestFiltrationWitStatus() {
     const string content1 = "funny office joke"s;
     const vector<int> ratings1 = {5, 6, 7};
     server.AddDocument(doc1_id, content1, DocumentStatus::BANNED, ratings1);
-	const auto found_docs = server.FindTopDocuments("let happiness leave the office"s, DocumentStatus::BANNED);
-	ASSERT_EQUAL_HINT(found_docs[0].id, 13, "Only 13th doc is BANNED"s);
+	const auto found_docs1 = server.FindTopDocuments("let happiness leave the office"s, DocumentStatus::BANNED);
+	ASSERT_EQUAL_HINT(found_docs1[0].id, 13, "Only 13th doc is BANNED"s);
+	const auto found_docs2 = server.FindTopDocuments("let happiness leave the office"s, DocumentStatus::REMOVED);
+	ASSERT_EQUAL_HINT(found_docs2[0].id, 777, "Only 777th doc is REMOVED"s);
 }
 
 // Тест проверяет корректное вычисление релевантности найденных документов
@@ -475,7 +477,7 @@ void TestSearchServer() {
     RUN_TEST(TestMatchingWordsAndMinusWords);
     RUN_TEST(TestRelevanceSorting);
     RUN_TEST(TestMediumRatingCalculation);
-    RUN_TEST(TestFiltrationWithUserPridicate);
+    RUN_TEST(TestFiltrationWithUserPredicate);
     RUN_TEST(TestFiltrationWitStatus);
     RUN_TEST(TestRelevanceCalculation);
 }
