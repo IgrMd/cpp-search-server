@@ -1,3 +1,4 @@
+//Sprint 3. Cpp Search server v0.3.1.
 #include <algorithm>
 #include <cmath>
 #include <iostream>
