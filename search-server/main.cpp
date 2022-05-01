@@ -1,9 +1,9 @@
-//Sprint 3. Cpp Search server v0.3.1.
+//Sprint 3. Cpp Search server v0.3.2.
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <map>
 #include <numeric>
+#include <map>
 #include <optional>
 #include <set>
 #include <stdexcept>
@@ -19,8 +19,7 @@ const double RELEVANCE_TRESHOLD = 1e-6;
 struct Document {
 	Document() = default;
 	Document(int id, double relevance, int rating)
-	: id(id), relevance(relevance), rating(rating)
-	{
+	: id(id), relevance(relevance), rating(rating) {
 	}
     int id = 0;
     double relevance = 0;
@@ -38,13 +37,11 @@ class SearchServer {
 public:
     template <typename StringContainer>
     explicit SearchServer(const StringContainer& stop_words)
-    	: stop_words_(MakeSetOfStopWords(stop_words))
-	{
+    	: stop_words_(MakeSetOfStopWords(stop_words)) {
     }
 
     explicit SearchServer(const string& stop_words)
-    	: SearchServer(SplitIntoWords(stop_words))
-    {
+    	: SearchServer(SplitIntoWords(stop_words)) {
     }
 
     void SetStopWords(const string& text) {
@@ -54,30 +51,28 @@ public:
         }
     }
 
-
     void AddDocument(int document_id, const string& document, DocumentStatus status,
                                    const vector<int>& ratings) {
     	if (document_id < 0) { //id must be greater than 0
-    		throw invalid_argument("negative doc's id"s);
+    		throw invalid_argument("doc's id ("s + to_string(document_id) + ") is negative"s );
     	} else if (documents_.count(document_id)) { //new doc id must be new
-    		throw invalid_argument("doc's id is already exists"s);
+    		throw invalid_argument("doc's id ("s + to_string(document_id) + ") is already exists"s);
     	}
-    	const vector<string> words = SplitIntoWordsNoStop(document);
-    	for (const string& word : words) {
-    		if (!IsValidWord(word)) {
-    			throw invalid_argument("control character in document"s);
-    		}
+    	try {
+    		const vector<string> words = SplitIntoWordsNoStop(document);
+        	document_ids_.push_back(document_id);
+            const double inv_word_count = 1.0 / words.size();
+            for (const string& word : words) {
+                word_to_document_freqs_[word][document_id] += inv_word_count;
+            }
+            documents_.emplace(document_id,
+                DocumentData{
+                    ComputeAverageRating(ratings),
+                    status
+                });
+    	} catch (const invalid_argument& error) {
+    		throw invalid_argument("doc's id ("s + to_string(document_id) + ") - "s + error.what());
     	}
-    	document_ids_.push_back(document_id);
-        const double inv_word_count = 1.0 / words.size();
-        for (const string& word : words) {
-            word_to_document_freqs_[word][document_id] += inv_word_count;
-        }
-        documents_.emplace(document_id,
-            DocumentData{
-                ComputeAverageRating(ratings),
-                status
-            });
     }
 
     //Метод обрабатывает запрос, первый аргумент которого - строка, второй - функция-предикат
@@ -85,7 +80,6 @@ public:
     vector<Document> FindTopDocuments(const string& raw_query, Predic predic) const {
 
     	const Query query = ParseQuery(raw_query);
-    	IsValidQuery(raw_query, query);
     	vector<Document> result = FindAllDocuments(query, predic);
         sort(result.begin(), result.end(),
              [](const Document& lhs, const Document& rhs) {
@@ -118,15 +112,15 @@ public:
     }
 
     int GetDocumentId(int number) const {
-		if (number < 0 || number >= static_cast<int>(documents_.size())) {
-			throw out_of_range("doc's id is out of [0; documents count)"s);
+		try {
+			return document_ids_.at(number);
+		} catch (out_of_range& error) {
+			throw out_of_range(error.what());
 		}
-		return document_ids_[number];
     }
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query, int document_id) const {
     	const Query query = ParseQuery(raw_query);
-    	IsValidQuery(raw_query, query);
         vector<string> matched_words;
         for (const string& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
@@ -150,7 +144,6 @@ public:
     }
 
 private:
-    inline static constexpr int INVALID_DOCUMENT_ID = -1;
 
     //структура данных документа (средний рейтинг, статус)
     struct DocumentData {
@@ -207,6 +200,9 @@ private:
     vector<string> SplitIntoWordsNoStop(const string& text) const {
         vector<string> words;
         for (const string& word : SplitIntoWords(text)) {
+    		if (!IsValidWord(word)) {
+    			throw invalid_argument("control character in word \""s + word + "\""s);
+    		}
             if (!IsStopWord(word)) {
                 words.push_back(word);
             }
@@ -230,10 +226,17 @@ private:
     };
 
     QueryWord ParseQueryWord(string text) const {
-        bool is_minus = false;
+    	if (text.empty()) {
+    		throw invalid_argument("empty word in query"s);
+    	} else if (!IsValidWord(text)) {
+    		throw invalid_argument("control character in query words"s);
+    	}
+    	bool is_minus = false;
         if (text[0] == '-') {
             is_minus = true;
             text = text.substr(1);
+            if  (text[0] == '-')
+            	throw invalid_argument("double \"-\" in query minus-word"s);
         }
         return {
             text,
@@ -249,6 +252,14 @@ private:
 
     //парсинг запроса на минус- и плюс-слова
     Query ParseQuery(const string& text) const {
+    	//проверка запроса на корректность вцелом
+    	if (text.empty()) {
+    		throw invalid_argument("empty query"s);
+    	}
+    	if (text[text.size()-1] == '-') {
+    		throw invalid_argument("no characters after \"-\" in query"s);
+    	}
+    	//парсинг
         Query query;
         for (const string& word : SplitIntoWords(text)) {
             const QueryWord query_word = ParseQueryWord(word);
@@ -261,24 +272,6 @@ private:
             }
         }
         return query;
-    }
-
-    //проверка запроса на "правильность"
-    static void IsValidQuery(const string& raw_query, const Query& query) {
-    	if (raw_query[raw_query.size()-1] == '-')
-    		throw invalid_argument("no characters after \"-\" in query"s);
-
-        for (const string& word : query.plus_words) {
-        	if (!IsValidWord(word))
-        		throw invalid_argument("control character in query plus-words"s);
-        }
-
-        for (const string& word : query.minus_words) {
-        	if (!IsValidWord(word))
-        		throw invalid_argument("control character in query minus-words"s);
-        	else if  (word[0] == '-')
-        		throw invalid_argument("double \"-\" in query minus-words"s);
-        }
     }
 
     //проверка слова на "правильность"
@@ -379,10 +372,20 @@ void MatchDocuments(const SearchServer& search_server, const string& query) {
         for (int index = 0; index < document_count; ++index) {
             const int document_id = search_server.GetDocumentId(index);
             const auto [words, status] = search_server.MatchDocument(query, document_id);
-            PrintMatchDocumentResult(document_id, words, status);
+            PrintMatchDocumentResult(document_id, words, status); // @suppress("Invalid arguments")
         }
     } catch (const exception& e) {
         cout << "Ошибка матчинга документов на запрос "s << query << ": "s << e.what() << endl;
+    }
+}
+
+void GetDocumentId(const SearchServer& search_server, int number) {
+    try {
+        cout << "Получение id документа по номеру добавления: "s << number << endl;
+        const int id = search_server.GetDocumentId(number);
+        cout << "Документ с номером "s << number << " имеет id: "s << id << endl;
+    } catch (const exception& e) {
+        cout << "Ошибка запроса id документа с номером "s << number << ": "s << e.what() << endl;
     }
 }
 
@@ -403,4 +406,6 @@ int main() {
     MatchDocuments(search_server, "модный -кот"s);
     MatchDocuments(search_server, "модный --пёс"s);
     MatchDocuments(search_server, "пушистый - хвост"s);
+    GetDocumentId(search_server, 42);
+    GetDocumentId(search_server, 1);
 }
