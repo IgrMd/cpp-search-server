@@ -21,13 +21,9 @@ const double RELEVANCE_TRESHOLD = 1e-6;
 class SearchServer {
 public:
 	template <typename StringContainer>
-	explicit SearchServer(const StringContainer& stop_words)
-		: stop_words_(MakeSetOfStopWords(stop_words)) {
-	}
+	explicit SearchServer(const StringContainer& stop_words);
 
-	explicit SearchServer(const std::string& stop_words)
-		: SearchServer(SplitIntoWords(stop_words)) {
-	}
+	explicit SearchServer(const std::string& stop_words);
 
 	void AddDocument(int document_id, const std::string& document, DocumentStatus status,
 										const std::vector<int>& ratings);
@@ -42,13 +38,9 @@ public:
 	//Метод обрабатывает запрос, состоящий из строки
 	std::vector<Document> FindTopDocuments(const std::string& raw_query) const;
 
-	int GetDocumentCount() const {
-		return documents_.size();
-	}
+	int GetDocumentCount() const;
 
-	int GetDocumentId(int number) const {
-		return document_ids_.at(number);
-	}
+	int GetDocumentId(int number) const;
 
 	std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id) const;
 
@@ -104,6 +96,11 @@ private:
 	template<typename Predic>
 	std::vector<Document> FindAllDocuments(const Query& query, Predic predic) const;
 };
+
+template <typename StringContainer>
+SearchServer::SearchServer(const StringContainer& stop_words)
+	: stop_words_(MakeSetOfStopWords(stop_words)) {
+}
 
 template<typename Predic>
 std::vector<Document> SearchServer::FindAllDocuments(const Query& query, Predic predic) const {

@@ -1,5 +1,9 @@
 #include "search_server.h"
 
+SearchServer::SearchServer(const std::string& stop_words)
+	: SearchServer(SplitIntoWords(stop_words)) {
+}
+
 void SearchServer::AddDocument(int document_id, const std::string& document, DocumentStatus status,
 									const std::vector<int>& ratings) {
 	if (document_id < 0) { //id must be greater than 0
@@ -36,6 +40,14 @@ int SearchServer::ComputeAverageRating(const std::vector<int>& ratings) {
 
 double SearchServer::ComputeWordInverseDocumentFreq(const std::string& word) const {
 	return log(GetDocumentCount() * 1.0 / word_to_document_freqs_.at(word).size());
+}
+
+int SearchServer::GetDocumentCount() const {
+	return documents_.size();
+}
+
+int SearchServer::GetDocumentId(int number) const {
+	return document_ids_.at(number);
 }
 
 bool SearchServer::IsStopWord(const std::string& word) const {
