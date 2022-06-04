@@ -22,6 +22,7 @@ void SearchServer::AddDocument(int document_id, const std::string& document, Doc
 	const double inv_word_count = 1.0 / words.size();
 	for (const std::string& word : words) {
 		word_to_document_freqs_[word][document_id] += inv_word_count;
+		document_to_word_freqs_[document_id][word] += inv_word_count;
 	}
 	documents_.emplace(document_id,
 		DocumentData{
@@ -29,6 +30,7 @@ void SearchServer::AddDocument(int document_id, const std::string& document, Doc
 			status
 		});
 }
+
 
 int SearchServer::ComputeAverageRating(const std::vector<int>& ratings) {
 	if (ratings.empty()) {
@@ -46,9 +48,16 @@ int SearchServer::GetDocumentCount() const {
 	return documents_.size();
 }
 
-int SearchServer::GetDocumentId(int number) const {
-	return document_ids_.at(number);
+const std::map<std::string, double>& SearchServer::GetWordFrequencies(int document_id) const{
+	static const std::map<std::string, double> empty_result;
+	return document_to_word_freqs_.count(document_id) ?
+			document_to_word_freqs_.at(document_id) :
+			empty_result;
 }
+
+/*int SearchServer::GetDocumentId(int number) const {
+	return document_ids_.at(number);
+}*/
 
 bool SearchServer::IsStopWord(const std::string& word) const {
 	return stop_words_.count(word) > 0;
@@ -133,6 +142,21 @@ void SearchServer::SetStopWords(const std::string& text) {
 	for (const std::string& word : MakeSetOfStopWords(stop_words)) {
 		stop_words_.insert(word);
 	}
+}
+
+void SearchServer::RemoveDocument(int document_id) {
+	if (!document_to_word_freqs_.count(document_id)) {
+		return;
+	}
+
+	for (auto& [key, map] : word_to_document_freqs_) {
+		if (map.count(document_id)) {
+			map.erase(document_id);
+		}
+	}
+	document_to_word_freqs_.erase(document_id);
+	documents_.erase(document_id);
+	document_ids_.erase(find(document_ids_.begin(), document_ids_.end(), document_id));
 }
 
 std::vector<std::string> SearchServer::SplitIntoWordsNoStop(const std::string& text) const {

@@ -28,6 +28,14 @@ public:
 	void AddDocument(int document_id, const std::string& document, DocumentStatus status,
 										const std::vector<int>& ratings);
 
+	auto begin() const {
+		return document_ids_.begin();
+	}
+
+	auto end() const{
+		return document_ids_.end();
+	}
+
 	//Метод обрабатывает запрос, первый аргумент которого - строка, второй - функция-предикат
 	template<typename Predic>
 	std::vector<Document> FindTopDocuments(const std::string& raw_query, Predic predic) const;
@@ -40,9 +48,13 @@ public:
 
 	int GetDocumentCount() const;
 
-	int GetDocumentId(int number) const;
+	const std::map<std::string, double>& GetWordFrequencies(int document_id) const;
+
+	//int GetDocumentId(int number) const;
 
 	std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id) const;
+
+	void RemoveDocument(int document_id);
 
 	void SetStopWords(const std::string& text);
 
@@ -56,7 +68,8 @@ private:
 
 	std::set<std::string> stop_words_;										//контейнер стоп-слов
 	std::map<std::string, std::map<int, double>> word_to_document_freqs_;	//контейнер std::map<слово, std::map<id документа, inverse document frequency(IDF)>>
-	std::map<int, DocumentData> documents_; 								//контейнер std::map<id документа, рейтинг-статус>
+	std::map<int, std::map<std::string, double>> document_to_word_freqs_;	//контейнер std::map<id документа, std::map<слово, inverse document frequency(IDF)>>
+	std::map<int, DocumentData> documents_;									//контейнер std::map<id документа, рейтинг-статус>
 	std::vector<int> document_ids_; 										//контейнер id документов в порядек их обавления
 
 	//вычисление среднего рейтинга документов
