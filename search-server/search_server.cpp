@@ -31,6 +31,13 @@ void SearchServer::AddDocument(int document_id, const std::string& document, Doc
 		});
 }
 
+std::vector<int>::const_iterator SearchServer::begin() const {
+	return document_ids_.begin();
+}
+
+std::vector<int>::const_iterator SearchServer::end() const{
+	return document_ids_.end();
+}
 
 int SearchServer::ComputeAverageRating(const std::vector<int>& ratings) {
 	if (ratings.empty()) {

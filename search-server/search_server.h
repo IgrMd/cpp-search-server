@@ -28,13 +28,9 @@ public:
 	void AddDocument(int document_id, const std::string& document, DocumentStatus status,
 										const std::vector<int>& ratings);
 
-	auto begin() const {
-		return document_ids_.begin();
-	}
+	std::vector<int>::const_iterator begin() const;
 
-	auto end() const{
-		return document_ids_.end();
-	}
+	std::vector<int>::const_iterator end() const;
 
 	//Метод обрабатывает запрос, первый аргумент которого - строка, второй - функция-предикат
 	template<typename Predic>

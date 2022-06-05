@@ -1,4 +1,4 @@
-//Sprint 5. Cpp Search server v0.5.0.
+//Sprint 5. Cpp Search server v0.5.1.
 #include <iostream>
 #include <vector>
 

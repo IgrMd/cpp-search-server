@@ -2,19 +2,15 @@
 
 void RemoveDuplicates(SearchServer& search_server) {
 	std::set<int> duplicates;
-	for (auto it_i = search_server.begin(); it_i != search_server.end(); ++it_i) {
-		std::set<std::string> set_of_keys_i;
-		for (const auto& [key, value] : search_server.GetWordFrequencies(*it_i)) {
-			set_of_keys_i.insert(key);
+	std::set<std::set<std::string>> check_dulicates;
+	for (int i : search_server) {
+		std::set<std::string> set_of_keys;
+		for (const auto& [key, value] : search_server.GetWordFrequencies(i)) {
+			set_of_keys.insert(key);
 		}
-		for (auto it_j = it_i+1; it_j != search_server.end(); ++it_j) {
-			std::set<std::string> set_of_keys_j;
-			for (const auto& [key, value] : search_server.GetWordFrequencies(*it_j)) {
-				set_of_keys_j.insert(key);
-			}
-			if (set_of_keys_i == set_of_keys_j) {
-				duplicates.insert(*it_j);
-			}
+		auto [it, is_inserted] = check_dulicates.insert(set_of_keys);
+		if (!is_inserted) {
+			duplicates.insert(i);
 		}
 	}
 	for (int i : duplicates) {
@@ -22,3 +18,4 @@ void RemoveDuplicates(SearchServer& search_server) {
 		search_server.RemoveDocument(i);
 	}
 }
+
