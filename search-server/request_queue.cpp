@@ -25,9 +25,9 @@ int RequestQueue::GetNoResultRequests() const {
 void RequestQueue::AddRequest(int results_num) {
 	++current_time_;
 	if (requests_.size() < min_in_day_) {
-		requests_.push_back({current_time_, results_num}); // @suppress("Invalid arguments")
+		requests_.push_back({current_time_, results_num});
 	} else {
 		requests_.pop_front();
-		requests_.push_back({current_time_, results_num}); // @suppress("Invalid arguments")
+		requests_.push_back({current_time_, results_num});
 	}
 }

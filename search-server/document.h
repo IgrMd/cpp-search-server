@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -15,5 +16,7 @@ struct Document {
 enum class DocumentStatus { ACTUAL, IRRELEVANT, BANNED,	REMOVED };
 
 void PrintDocument(const Document& document);
+
+void PrintDocumentStringstream(const Document& document, std::stringstream& ss);
 
 void PrintDocumentNoEndl(const Document& document);

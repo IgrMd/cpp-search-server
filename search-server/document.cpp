@@ -19,3 +19,10 @@ void PrintDocumentNoEndl(const Document& document) {
 		 << "relevance = "s << document.relevance << ", "s
 		 << "rating = "s << document.rating << " }"s;
 }
+
+void PrintDocumentStringstream(const Document& document, std::stringstream& ss) {
+	ss << "{ "s
+		<< "document_id = "s << document.id << ", "s
+		<< "relevance = "s << document.relevance << ", "s
+		<< "rating = "s << document.rating << " }"s << std::endl;
+}
